@@ -1,0 +1,19 @@
+[% PROCESS settings/header.html %]
+	[% WRAPPER settingSection %]
+		[% WRAPPER settingGroup title="SETUP_GROUP_JEEDOM" desc="" %]
+			<table border="0" cellspacing="3" cellpaddding="3">
+			<tr>
+			<td><label for="pref_address">[% "SETUP_JEEDOMIP" | string %]</label>
+				<input type="text" class="stdedit" name="pref_ip" id="jeedomip" value="[% prefs.pref_ip %]" size="20">
+			</td>
+			<td><label for="pref_address">[% "SETUP_JEEDOMCOMPLEMENT" | string %]</label>
+				<input type="text" class="stdedit" name="pref_complement" id="jeedomcomplement" value="[% prefs.pref_complement %]" size="20">
+			</td>
+            <td><label for="pref_user">[% "SETUP_JEEDOMKEY" | string %]</label>
+				<input type="text" class="stdedit" name="pref_key" id="jeedomkey" value="[% prefs.pref_key %]" size="20">
+			</td>    
+			</tr>
+		</table>
+		[% END %]
+	[% END %]
+[% PROCESS settings/footer.html %]
