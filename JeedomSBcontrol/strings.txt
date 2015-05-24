@@ -1,0 +1,26 @@
+# String file for Jeedomsbcontrol plugin
+#
+# Any string you want to display should be defined here.
+# It makes it easier to support multiple languages
+
+
+PLUGIN_JEEDOMSBCONTROL_NAME
+	EN	JeedomSBcontrol
+
+PLUGIN_JEEDOMSBCONTROL_DESC
+	EN	Plugin pour SqueezeBox Control Jeedom
+
+SETUP_GROUP_JEEDOMSBCONTROL
+	EN	Paramètres SqueezeBox Control Jeedom
+
+SETUP_GROUP_JEEDOMSBCONTROL_DESC
+	EN	IP sous la forme 192.168.1.59 le complement peut etre par exemple /jeedom
+    
+SETUP_JEEDOMIP
+	EN	Adresse IP de Jeedom
+
+SETUP_JEEDOMCOMPLEMENT
+	EN	Complement (/jeedom)
+	
+SETUP_JEEDOMKEY
+	EN	Clé API de Jeedom

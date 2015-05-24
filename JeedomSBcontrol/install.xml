@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+
+<extension>
+        <id>4ec7ccbb-be22-4819-9041-7c1020773e6c</id>
+        <name>PLUGIN_JEEDOMSBCONTROL_NAME</name>
+        <module>Plugins::JeedomSBcontrol::Plugin</module>
+        <version>1.0</version>
+        <description>PLUGIN_JEEDOMSBCONTROL_DESC</description>
+        <creator>Sarakha63 inspired by Hydro</creator>
+
+	<defaultState>enabled</defaultState>
+        
+        <homepageURL>http://www.jeedom.com</homepageURL>
+	<optionsURL>plugins/Jeedomsbcontrol/settings/basic.html</optionsURL>
+	<type>2</type><!-- type=extension -->
+
+        <targetApplication>
+  	        <id>SqueezeCenter</id>
+                <minVersion>7.0a</minVersion>
+                <maxVersion>7+</maxVersion>
+        </targetApplication>
+
+</extension>
