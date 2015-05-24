@@ -1,4 +1,4 @@
-package Plugins::Jeedom::Settings;
+package Plugins::JeedomSBcontrol::Settings;
 
 
 # SqueezeCenter Copyright 2001-2007 Logitech.
@@ -19,7 +19,7 @@ use Slim::Utils::Log;
 
 # Used for logging.
 my $log = Slim::Utils::Log->addLogCategory({
-	'category'     => 'plugin.jeedom',
+	'category'     => 'plugin.jeedomsbcontrol',
 	'defaultLevel' => 'INFO',
 #	'defaultLevel' => 'DEBUG',
 	'description'  => 'JeedomSBcontrol Settings',
@@ -32,7 +32,7 @@ sub myDebug {
 	$log->info("*** JeedomSBcontrol - Settings *** $msg");
 }
 
-my $prefs = preferences('plugin.jeedom');
+my $prefs = preferences('plugin.jeedomsbcontrol');
 
 sub name {
 	return Slim::Web::HTTP::CSRF->protectName('PLUGIN_JEEDOM_NAME');

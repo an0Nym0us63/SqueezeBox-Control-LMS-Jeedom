@@ -1,4 +1,4 @@
-package Plugins::Jeedom::Plugin;
+package Plugins::JeedomSBcontrol::Plugin;
 
 # HelloWorld tutorial plugin by Mitch Gerdisch
 # Meant to be a way of figuring out and understanding how plugins need to be written for SC7.
@@ -69,7 +69,7 @@ our @browseMenuChoices;
 # So, squeezecenter.exe --debug plugin.helloworld=INFO,persist will show all messages fro INFO, WARN, ERROR, and FATAL.
 # The "persist" bit of text allows the system to remember that logging level between invocations of squeezecenter.
 my $log = Slim::Utils::Log->addLogCategory({
-	'category'     => 'plugin.jeedom',
+	'category'     => 'plugin.jeedomsbcontrol',
 	'defaultLevel' => 'INFO',
 #	'defaultLevel' => 'DEBUG',
 	'description'  => getDisplayName(),
