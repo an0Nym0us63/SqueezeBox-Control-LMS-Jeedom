@@ -48,6 +48,8 @@ use Slim::Utils::Prefs;
 
 # MUST HAVE: provides the strings functionality that uses the strings.txt file to present the correct language
 use Slim::Utils::Strings qw(string);
+use utf8;
+use URI::Escape;
 my $enc = 'latin-1';
 my $jeedomip;
 my $jeedomkey;
@@ -169,9 +171,9 @@ sub commandCallbackNewsong {
 		my $duration =  0;
 		my $played =  0;
 		
-		eval {$sName =  decode($enc,$sTitle->track()->title)  || '';	}; warn $@ if $@;
-		eval { $artist   = decode($enc,$sTitle->track()->artistName) || '';}; warn $@ if $@;
-		eval { $album    = decode($enc,$sTitle->track()->album->name) || '';}; warn $@ if $@;
+		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
+		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || '';}; warn $@ if $@;
+		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->album->name))) || '';}; warn $@ if $@;
 		eval { $tracknum = $sTitle->track()->tracknum || '';}; warn $@ if $@;
 		eval { $duration = $sTitle->track()->secs;}; warn $@ if $@;
 
@@ -210,8 +212,8 @@ sub commandCallback {
 			$log->error("CALL1ELSE");
 			my $mac = ref($client) ? $client->macaddress() : $client;
 			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-			$log->error("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Pause\"}");
-			$http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Pause\"}");
+			$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Pause\"}");
+			$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Pause\"}");
 		}
 	}	
 	 elsif( $request->isCommand([['play']])
@@ -221,8 +223,8 @@ sub commandCallback {
 		$log->error("CALL1ELIF1");
 		my $mac = ref($client) ? $client->macaddress() : $client;
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-		$log->error("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
-        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
+		$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
+        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
 	}
 	 elsif( $request->isCommand([['playlist'], ['stop']]) || $request->isCommand([['playlist'], ['clear']]) ) {
 		$log->error("CALL1ELIF2");
@@ -242,14 +244,14 @@ sub handlePlayStop {
 	if ($iPower == 1){
 		$log->error("HANDLESTOPPOWER1");
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-		$log->error("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Stop\"}");
-        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Stop\"}");
+		$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Stop\"}");
+        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Stop\"}");
 	}
 	else{
 		$log->error("HANDLESTOPELSE");
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-		$log->error("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\"}");
-        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\"}");
+		$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\"}");
+        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\"}");
 	}
 
 }# Always end with a 1 to make Perl happy
