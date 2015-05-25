@@ -3,7 +3,7 @@
 <title lang="EN">Plugin Jeedom</title>
 </details>
 <plugins>
-<plugin name="JeedomSBcontrol" version="1.0.0" minTarget="7.5" maxTarget="*">
+<plugin name="JeedomSBcontrol" version="1.0.1" minTarget="7.5" maxTarget="*">
 <title lang="EN">JeedomSBcontrol</title>
 <desc lang="EN">
 Plugin pour se synchroniser avec le plugin Squeezebox Control de Jeedom
