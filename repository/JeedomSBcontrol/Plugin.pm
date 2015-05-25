@@ -152,7 +152,7 @@ sub commandCallbackVolume {
                 client => $client, 
             });
 
-        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&logicalId=volume&value=$iVolume");
+        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"volume\":\"$iVolume\"}");
 		}
 	}	
 }
@@ -172,7 +172,7 @@ sub commandCallbackNewsong {
     
 	my $sTitle = $client->playingSong();
 	
-	my $sName =  'No Track';	
+	my $sName =  'Aucun';
 	my $artist   = '';
 	my $album    = '';
 	my $tracknum = '';
@@ -194,7 +194,7 @@ my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
                         
                 });
 
-        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&logicalId=infos&titre=$sName&artis=$artist&album=$album");
+        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\"}");
 	}	
 }
 
@@ -233,7 +233,7 @@ sub commandCallback {
                         
                 });
 
-        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&logicalId=statut&value=Pause");
+        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Pause\"}");
 		}
 	}	
 	 elsif( $request->isCommand([['play']])
@@ -249,10 +249,10 @@ sub commandCallback {
                         
                 });
 
-        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&logicalId=statut&value=Lecture");
+        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
 	}	 
 	 elsif( $request->isCommand([['playlist'], ['stop']]) 
-	 	 || $request->isCommand([['playlist'], ['clear']]) ) {				 
+	 	 || $request->isCommand([['playlist'], ['clear']]) ) {
 		if ($iStopped == 1){			
 				&handlePlayStop($client);
 		}
@@ -272,7 +272,7 @@ sub handlePlayStop {
         client => $client, 
 		});
 
-        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&logicalId=statut&value=Stop"); 		
+        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Stop\"}"); 		
 	}
 	else{
 	my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
@@ -281,7 +281,7 @@ sub handlePlayStop {
       client => $client, 
      });
 
-        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&logicalId=statut&value=Off");
+        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\"}");
 	}
 
 
