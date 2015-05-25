@@ -28,6 +28,7 @@ use base qw(Slim::Plugin::Base);
 use Plugins::JeedomSBcontrol::Settings;
 use Slim::Music::Info;
 
+use Encode qw(decode_utf8);
 use Slim::Utils::Misc;
 use Slim::Utils::Network;
 use Slim::Player::Player;
@@ -146,7 +147,7 @@ sub commandCallbackVolume {
 			my $mac = ref($client) ? $client->macaddress() : $client;
 			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
 			\&exampleErrorCallback,{client => $client,});
-
+			$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"volume\":\"$iVolume\"}");
 			$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"volume\":\"$iVolume\"}");
 		}
 	}
@@ -167,10 +168,10 @@ sub commandCallbackNewsong {
 		my $tracknum = '';
 		my $duration =  0;
 		my $played =  0;
-	
-		eval {$sName =  $sTitle->track()->title  || '';	}; warn $@ if $@;
-		eval { $artist   = $sTitle->track()->artistName || '';}; warn $@ if $@;
-		eval { $album    = $sTitle->track()->album->name || '';}; warn $@ if $@;
+		
+		eval {$sName =  decode_utf8($sTitle->track()->title)  || '';	}; warn $@ if $@;
+		eval { $artist   = decode_utf8($sTitle->track()->artistName) || '';}; warn $@ if $@;
+		eval { $album    = decode_utf8($sTitle->track()->album->name) || '';}; warn $@ if $@;
 		eval { $tracknum = $sTitle->track()->tracknum || '';}; warn $@ if $@;
 		eval { $duration = $sTitle->track()->secs;}; warn $@ if $@;
 
