@@ -43,7 +43,7 @@ sub page {
 }
 
 sub prefs {
-	return ($prefs, qw(address user) );
+	return ($prefs, qw(ip complement key) );
 }
 
 1;
