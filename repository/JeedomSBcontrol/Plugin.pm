@@ -25,7 +25,7 @@ use base qw(Slim::Plugin::Base);
 
 # Plugin specific bit - put name of plugin where HelloWorld is.
 # This points to the Settings.pm file that you also need to create/update for the plugin.
-use Plugins::JeedomSbcontrol::Settings;
+use Plugins::JeedomSBcontrol::Settings;
 use Slim::Music::Info;
 
 use Slim::Utils::Misc;
