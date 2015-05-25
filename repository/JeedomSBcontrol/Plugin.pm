@@ -48,7 +48,7 @@ use Slim::Utils::Prefs;
 
 # MUST HAVE: provides the strings functionality that uses the strings.txt file to present the correct language
 use Slim::Utils::Strings qw(string);
-my $enc = 'utf-8';
+my $enc = 'latin-1';
 my $jeedomip;
 my $jeedomkey;
 my $jeedomcomplement;
@@ -178,11 +178,13 @@ sub commandCallbackNewsong {
 		my $mac = ref($client) ? $client->macaddress() : $client;
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 
-        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"titre\":\"encode($enc,$sName)\",\"artist\":\"$artist\",\"album\":\"$album\"}");
-	}	
+        $log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\"}");
+		$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\"}");
+	}
 }
 
 sub commandCallback {
+	$log->error("COMMANDCALLBACK");
 	my $request = shift;
 	my $client = $request->client();
 
@@ -196,16 +198,19 @@ sub commandCallback {
 
 	if ($request->isCommand([['pause'] ]) 
 		|| $request->isCommand([['playlist'], ['pause']])){
+		$log->error("CALL1");
 		if($iPaused ne  1) {
+			$log->error("CALL1IF");
 			my $mac = ref($client) ? $client->macaddress() : $client;
 			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-
+			$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
 			$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
 		}
 		else {
+			$log->error("CALL1ELSE");
 			my $mac = ref($client) ? $client->macaddress() : $client;
 			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-
+			$log->error("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Pause\"}");
 			$http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Pause\"}");
 		}
 	}	
@@ -213,31 +218,37 @@ sub commandCallback {
 		|| $request->isCommand([['playlist'], ['newsong']]) 
 		|| $request->isCommand([['playlist'], ['play']])
 		|| $request->isCommand([['playlist'], ['resume']])){
-		
+		$log->error("CALL1ELIF1");
 		my $mac = ref($client) ? $client->macaddress() : $client;
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
+		$log->error("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
         $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
 	}
 	 elsif( $request->isCommand([['playlist'], ['stop']]) || $request->isCommand([['playlist'], ['clear']]) ) {
-		if ($iStopped == 1){			
+		$log->error("CALL1ELIF2");
+		if ($iStopped == 1){
+			$log->error("CALL1ELIF2STOP");
 			&handlePlayStop($client);
 		}
 	}
 }
 
 sub handlePlayStop {
+	$log->error("HANDLESTOP");
 	my $client = shift;
 	my $iPower = $client->power();
 	my $mac = ref($client) ? $client->macaddress() : $client;
 
 	if ($iPower == 1){
+		$log->error("HANDLESTOPPOWER1");
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-
+		$log->error("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Stop\"}");
         $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Stop\"}");
 	}
 	else{
+		$log->error("HANDLESTOPELSE");
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-
+		$log->error("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\"}");
         $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\"}");
 	}
 
