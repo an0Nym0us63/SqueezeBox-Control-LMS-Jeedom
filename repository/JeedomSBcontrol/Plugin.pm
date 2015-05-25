@@ -118,7 +118,9 @@ sub initPlugin {
     
     Slim::Control::Request::subscribe( \&commandCallbackNewsong, [['playlist'], ['newsong']]);
     
-    Slim::Control::Request::subscribe( \&commandCallback, [['power','play', 'playlist', 'pause']]);
+    Slim::Control::Request::subscribe( \&commandCallback, [['play', 'playlist', 'pause']]);
+	
+	Slim::Control::Request::subscribe( \&powerCallback, [['power']]);
 
 }
 
@@ -129,6 +131,8 @@ sub shutdownPlugin {
     Slim::Control::Request::unsubscribe(\&commandCallbackNewsong);
     
     Slim::Control::Request::unsubscribe(\&commandCallback);
+    
+    Slim::Control::Request::unsubscribe(\&powerCallback);
 
 }
 
@@ -232,6 +236,25 @@ sub commandCallback {
 			$log->error("CALL1ELIF2STOP");
 			&handlePlayStop($client);
 		}
+	}
+}
+
+sub powerCallback {
+	my $client = shift;
+	my $iPower = $client->power();
+	my $mac = ref($client) ? $client->macaddress() : $client;
+	
+	if ($iPower == 1){
+		$log->error("HANDLESTOPPOWER1");
+		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
+		$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"On\"}");
+        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"On\"}");
+	}
+	else{
+		$log->error("HANDLESTOPELSE");
+		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
+		$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\"}");
+        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\"}");
 	}
 }
 
