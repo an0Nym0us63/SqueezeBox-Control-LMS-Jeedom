@@ -152,7 +152,7 @@ sub commandCallbackVolume {
                 client => $client, 
             });
 
-        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&logicalId=volume&value=$iVolume");
+        $http->get("http://$jeedomip/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&logicalId=volume&value=$iVolume");
 		}
 	}	
 }
