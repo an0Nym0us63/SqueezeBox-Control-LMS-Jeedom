@@ -193,6 +193,7 @@ sub commandCallback {
 	$log->error("COMMANDCALLBACK");
 	my $request = shift;
 	my $client = $request->client();
+	my $iPower = $client->power();
 
 	# Do nothing if client is not defined
 	if( !defined( $client)) {
@@ -202,10 +203,10 @@ sub commandCallback {
 	my $iPaused = $client->isPaused();
 	my $iStopped = $client->isStopped();
 
-	if ($request->isCommand([['pause'] ]) 
-		|| $request->isCommand([['playlist'], ['pause']])){
+	if (($request->isCommand([['pause'] ]) 
+		|| $request->isCommand([['playlist'], ['pause']])) && $iPower == 1){
 		$log->error("CALL1");
-		if($iPaused ne  1) {
+		if($iPaused ne  1 ) {
 			$log->error("CALL1IF");
 			my $mac = ref($client) ? $client->macaddress() : $client;
 			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
@@ -240,7 +241,8 @@ sub commandCallback {
 }
 
 sub powerCallback {
-	my $client = shift;
+	my $request = shift;
+	my $client = $request->client();
 	my $iPower = $client->power();
 	my $mac = ref($client) ? $client->macaddress() : $client;
 	
