@@ -206,30 +206,36 @@ sub commandCallback {
 	if (($request->isCommand([['pause'] ]) 
 		|| $request->isCommand([['playlist'], ['pause']])) && $iPower == 1){
 		$log->error("CALL1");
-		if($iPaused ne  1 ) {
-			$log->error("CALL1IF");
-			my $mac = ref($client) ? $client->macaddress() : $client;
-			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-			$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
-			$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
-		}
-		else {
+		if($iPaused ==  1 ) {
 			$log->error("CALL1ELSE");
 			my $mac = ref($client) ? $client->macaddress() : $client;
 			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 			$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Pause\"}");
-			$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Pause\",\"titre\":\"En\",\"artist\":\"Pause\",\"album\":\"\"}");
+			$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Pause\",\"titre\":\"Pause\",\"artist\":\"En\",\"album\":\" \"}");
 		}
 	}	
 	 elsif( $request->isCommand([['play']])
-		|| $request->isCommand([['playlist'], ['newsong']]) 
 		|| $request->isCommand([['playlist'], ['play']])
 		|| $request->isCommand([['playlist'], ['resume']])){
-		$log->error("CALL1ELIF1");
+		my $sTitle = $client->playingSong();
+		my $sName =  'Aucun';
+		my $artist   = '';
+		my $album    = '';
+		my $tracknum = '';
+		my $duration =  0;
+		my $played =  0;
+		
+		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
+		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || '';}; warn $@ if $@;
+		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->album->name))) || '';}; warn $@ if $@;
+		eval { $tracknum = $sTitle->track()->tracknum || '';}; warn $@ if $@;
+		eval { $duration = $sTitle->track()->secs;}; warn $@ if $@;
+
 		my $mac = ref($client) ? $client->macaddress() : $client;
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-		$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
-        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Lecture\"}");
+
+        $log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\"}");
+		$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"Lecture\"}");
 	}
 	 elsif( $request->isCommand([['playlist'], ['stop']]) || $request->isCommand([['playlist'], ['clear']]) ) {
 		$log->error("CALL1ELIF2");
@@ -250,13 +256,13 @@ sub powerCallback {
 		$log->error("HANDLESTOPPOWER1");
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 		$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"On\"}");
-        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"On\",\"titre\":\"SqueezeBox\",\"artist\":\"Allume\",\"album\":\"\"}}");
+        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"On\",\"titre\":\"Allume\",\"artist\":\"SqueezeBox\",\"album\":\" \"}}");
 	}
 	else{
 		$log->error("HANDLESTOPELSE");
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 		$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\"}");
-        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\",\"titre\":\"SqueezeBox\",\"artist\":\"Eteinte\",\"album\":\"\"}");
+        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\",\"titre\":\"Eteinte\",\"artist\":\"SqueezeBox\",\"album\":\" \"}");
 	}
 }
 
@@ -270,13 +276,7 @@ sub handlePlayStop {
 		$log->error("HANDLESTOPPOWER1");
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 		$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Stop\"}");
-        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Stop\",\"titre\":\"SqueezeBox\",\"artist\":\"Stop\",\"album\":\"\"}");
-	}
-	else{
-		$log->error("HANDLESTOPELSE");
-		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-		$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\"}");
-        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\",\"titre\":\"SqueezeBox\",\"artist\":\"Eteinte\",\"album\":\"\"}}");
+        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Stop\",\"titre\":\"Arret\",\"artist\":\"SqueezeBox\",\"album\":\" \"}");
 	}
 
 }# Always end with a 1 to make Perl happy
