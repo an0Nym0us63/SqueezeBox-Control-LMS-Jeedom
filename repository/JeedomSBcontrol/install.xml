@@ -11,7 +11,7 @@
 	<defaultState>enabled</defaultState>
         
         <homepageURL>http://www.jeedom.com</homepageURL>
-	<optionsURL>plugins/Jeedomsbcontrol/settings/basic.html</optionsURL>
+	<optionsURL>plugins/JeedomSBcontrol/settings/basic.html</optionsURL>
 	<type>2</type><!-- type=extension -->
 
         <targetApplication>
