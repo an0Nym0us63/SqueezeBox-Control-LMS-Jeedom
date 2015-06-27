@@ -116,11 +116,13 @@ sub initPlugin {
 	
 	Slim::Control::Request::subscribe( \&commandCallbackVolume, [['mixer']]);
     
-    Slim::Control::Request::subscribe( \&commandCallbackNewsong, [['playlist'], ['newsong']]);
+        Slim::Control::Request::subscribe( \&commandCallbackNewsong, [['playlist'], ['newsong']]);
     
-    Slim::Control::Request::subscribe( \&commandCallback, [['play', 'playlist', 'pause']]);
+        Slim::Control::Request::subscribe( \&commandCallback, [['play', 'playlist', 'pause']]);
 	
 	Slim::Control::Request::subscribe( \&powerCallback, [['power']]);
+
+	Slim::Control::Request::subscribe( \&syncCallback, [['sync']]);
 
 }
 
@@ -128,12 +130,36 @@ sub shutdownPlugin {
 
 	Slim::Control::Request::unsubscribe(\&commandCallbackVolume);
     
-    Slim::Control::Request::unsubscribe(\&commandCallbackNewsong);
+    	Slim::Control::Request::unsubscribe(\&commandCallbackNewsong);
     
-    Slim::Control::Request::unsubscribe(\&commandCallback);
+   	Slim::Control::Request::unsubscribe(\&commandCallback);
     
-    Slim::Control::Request::unsubscribe(\&powerCallback);
+    	Slim::Control::Request::unsubscribe(\&powerCallback);
 
+	Slim::Control::Request::unsubscribe(\&syncCallback);
+
+
+}
+sub syncCallback {
+        my $request = shift;
+
+        my $client = $request->client();
+        if( !defined( $client)) {
+                return;
+        }
+        my $mac = ref($client) ? $client->macaddress() : $client;
+        my $synced = "|";
+        my $controller = $client->controller();
+	if( scalar $controller->allPlayers() > 1 && $client != $controller->master()) {
+		return;
+	}
+	for my $other ($client->syncedWith()) {
+                my $othermac = ref($other) ? $other->macaddress() : $other;
+                $synced = $synced . $othermac . "|";
+        }
+        my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
+			\&exampleErrorCallback,{client => $client,});
+		$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"synced\":\"$synced\"}");
 }
 
 sub commandCallbackVolume {
@@ -176,10 +202,8 @@ sub commandCallbackNewsong {
 		my $played =  0;
 		
 		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
-		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || '';}; warn $@ if $@;
-		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->album->name))) || '';}; warn $@ if $@;
-		eval { $tracknum = $sTitle->track()->tracknum || '';}; warn $@ if $@;
-		eval { $duration = $sTitle->track()->secs;}; warn $@ if $@;
+		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || 'Plugin';}; warn $@ if $@;
+		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || '';}; warn $@ if $@;
 
 		my $mac = ref($client) ? $client->macaddress() : $client;
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
@@ -219,13 +243,9 @@ sub commandCallback {
 		my $tracknum = '';
 		my $duration =  0;
 		my $played =  0;
-		
 		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
 		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || '';}; warn $@ if $@;
-		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->album->name))) || '';}; warn $@ if $@;
-		eval { $tracknum = $sTitle->track()->tracknum || '';}; warn $@ if $@;
-		eval { $duration = $sTitle->track()->secs;}; warn $@ if $@;
-
+		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || '';}; warn $@ if $@;
 		my $mac = ref($client) ? $client->macaddress() : $client;
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 
