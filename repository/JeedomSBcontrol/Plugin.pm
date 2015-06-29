@@ -203,7 +203,7 @@ sub commandCallbackNewsong {
 		
 		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
 		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || 'Plugin';}; warn $@ if $@;
-		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || '';}; warn $@ if $@;
+		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || 'Plugin';}; warn $@ if $@;
 
 		my $mac = ref($client) ? $client->macaddress() : $client;
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
@@ -244,8 +244,8 @@ sub commandCallback {
 		my $duration =  0;
 		my $played =  0;
 		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
-		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || '';}; warn $@ if $@;
-		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || '';}; warn $@ if $@;
+		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || 'Plugin';}; warn $@ if $@;
+		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || 'Plugin';}; warn $@ if $@;
 		my $mac = ref($client) ? $client->macaddress() : $client;
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 
@@ -273,8 +273,8 @@ sub powerCallback {
         my $duration =  0;
         my $played =  0;
 		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
-		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || '';}; warn $@ if $@;
-		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || '';}; warn $@ if $@;
+		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || 'Plugin';}; warn $@ if $@;
+		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || 'Plugin';}; warn $@ if $@;
         my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
         if ($sName == ''){
             $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"On\",\"titre\":\"Allume\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
