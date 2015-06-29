@@ -263,10 +263,24 @@ sub powerCallback {
 	my $client = $request->client();
 	my $iPower = $client->power();
 	my $mac = ref($client) ? $client->macaddress() : $client;
-	
+    
 	if ($iPower == 1){
-		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-		$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"On\",\"titre\":\"Allume\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
+        my $sTitle = $client->playingSong();
+        my $sName =  'Aucun';
+        my $artist   = '';
+        my $album    = '';
+        my $tracknum = '';
+        my $duration =  0;
+        my $played =  0;
+		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
+		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || '';}; warn $@ if $@;
+		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || '';}; warn $@ if $@;
+        my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
+        if ($sName == ''{
+            $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"On\",\"titre\":\"Allume\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
+        } else {
+            $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"Lecture\"}");
+        }
 	}
 	else{
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
