@@ -25,9 +25,10 @@ use base qw(Slim::Plugin::Base);
 
 # Plugin specific bit - put name of plugin where HelloWorld is.
 # This points to the Settings.pm file that you also need to create/update for the plugin.
-use Plugins::JeedomSbcontrol::Settings;
+use Plugins::JeedomSBcontrol::Settings;
 use Slim::Music::Info;
 
+use Encode qw(encode decode);;
 use Slim::Utils::Misc;
 use Slim::Utils::Network;
 use Slim::Player::Player;
@@ -47,7 +48,9 @@ use Slim::Utils::Prefs;
 
 # MUST HAVE: provides the strings functionality that uses the strings.txt file to present the correct language
 use Slim::Utils::Strings qw(string);
-
+use utf8;
+use URI::Escape;
+my $enc = 'latin-1';
 my $jeedomip;
 my $jeedomkey;
 my $jeedomcomplement;
@@ -71,14 +74,13 @@ our @browseMenuChoices;
 my $log = Slim::Utils::Log->addLogCategory({
 	'category'     => 'plugin.jeedomsbcontrol',
 	'defaultLevel' => 'INFO',
-#	'defaultLevel' => 'DEBUG',
 	'description'  => getDisplayName(),
 });
 
 # This is an old friend from pre-SC7 days
 # It returns the name to display on the squeezebox
 sub getDisplayName {
-	return 'PLUGIN_JEEDOMSBCONTROL';
+	return 'PLUGIN_JEEDOMSBCONTROL_NAME';
 }
 
 # I have my own debug routine so that I can add the *** stuff easily.
@@ -114,9 +116,13 @@ sub initPlugin {
 	
 	Slim::Control::Request::subscribe( \&commandCallbackVolume, [['mixer']]);
     
-    Slim::Control::Request::subscribe( \&commandCallbackNewsong, [['playlist'], ['newsong']]);
+        Slim::Control::Request::subscribe( \&commandCallbackNewsong, [['playlist'], ['newsong']]);
     
-    Slim::Control::Request::subscribe( \&commandCallback, [['play', 'playlist', 'pause']]);
+        Slim::Control::Request::subscribe( \&commandCallback, [['play', 'playlist', 'pause']]);
+	
+	Slim::Control::Request::subscribe( \&powerCallback, [['power']]);
+
+	Slim::Control::Request::subscribe( \&syncCallback, [['sync']]);
 
 }
 
@@ -124,13 +130,37 @@ sub shutdownPlugin {
 
 	Slim::Control::Request::unsubscribe(\&commandCallbackVolume);
     
-    Slim::Control::Request::unsubscribe(\&commandCallbackNewsong);
+    	Slim::Control::Request::unsubscribe(\&commandCallbackNewsong);
     
-    Slim::Control::Request::unsubscribe(\&commandCallback);
+   	Slim::Control::Request::unsubscribe(\&commandCallback);
+    
+    	Slim::Control::Request::unsubscribe(\&powerCallback);
+
+	Slim::Control::Request::unsubscribe(\&syncCallback);
+
 
 }
+sub syncCallback {
+        my $request = shift;
 
-
+        my $client = $request->client();
+        if( !defined( $client)) {
+                return;
+        }
+        my $mac = ref($client) ? $client->macaddress() : $client;
+        my $synced = "|";
+        my $controller = $client->controller();
+	if( scalar $controller->allPlayers() > 1 && $client != $controller->master()) {
+		return;
+	}
+	for my $other ($client->syncedWith()) {
+                my $othermac = ref($other) ? $other->macaddress() : $other;
+                $synced = $synced . $othermac . "|";
+        }
+        my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
+			\&exampleErrorCallback,{client => $client,});
+		$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"synced\":\"$synced\"}");
+}
 
 sub commandCallbackVolume {
 	my $request = shift;
@@ -139,23 +169,20 @@ sub commandCallbackVolume {
 	if( !defined( $client)) {
 		return;
 	}
-		
+
 	my $iPower = $client->power();
 
 	if( $request->isCommand([['mixer'], ['volume']])  ) {
 		if($iPower ==  1) {
 			
-			my $iVolume = $client->volume();			
+			my $iVolume = $client->volume();
 			my $mac = ref($client) ? $client->macaddress() : $client;
 			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-			\&exampleErrorCallback, 
-			{
-                client => $client, 
-            });
-
-        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&logicalId=volume&value=$iVolume");
+			\&exampleErrorCallback,{client => $client,});
+			$log->error("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"volume\":\"$iVolume\"}");
+			$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"volume\":\"$iVolume\"}");
 		}
-	}	
+	}
 }
 
 sub commandCallbackNewsong {
@@ -165,7 +192,7 @@ sub commandCallbackNewsong {
 #       request the current player's status. Starting with the current track ('-'), grab information for one single track:
         my $r = $client->execute(['status', '-', 1, 'tags:aKl']);
 
-#       playlist_loop of the response is a list of track information hashes. We only have requested one - grab it:
+#       playlist_loop of the response is a list of track information hashes. We only have requested on - grab it:
         my $track = $r->getResult('playlist_loop')->[0];
 
         if( !defined( $client)) {
@@ -173,7 +200,7 @@ sub commandCallbackNewsong {
         }
         if( $request->isCommand([['playlist'], ['newsong']]) ) {
 
-                my $sTitle = $client->playingSong(); # Pas sur que ça soit encore utile, je l'ai commenté plus bas le sTitle
+                my $sTitle = $client->playingSong();
                 my $sName =  'Aucun';
                 my $artist   = '';
                 my $album    = '';
@@ -199,8 +226,8 @@ sub commandCallbackNewsong {
 
 sub commandCallback {
 	my $request = shift;
-
 	my $client = $request->client();
+	my $iPower = $client->power();
 
 	# Do nothing if client is not defined
 	if( !defined( $client)) {
@@ -210,86 +237,78 @@ sub commandCallback {
 	my $iPaused = $client->isPaused();
 	my $iStopped = $client->isStopped();
 
-	if ($request->isCommand([['pause'] ]) 
-		|| $request->isCommand([['playlist'], ['pause']])){
-		
-		if($iPaused ne  1) {
+	if (($request->isCommand([['pause'] ]) 
+		|| $request->isCommand([['playlist'], ['pause']])) && $iPower == 1){
+		if($iPaused ==  1 ) {
 			my $mac = ref($client) ? $client->macaddress() : $client;
-			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-			\&exampleErrorCallback, 
-			{
-              client => $client,        
-                });
-
-        $http->get('http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={"statut":"Lecture"}');
+			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
+			$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Pause\",\"titre\":\"Pause\",\"artist\":\"En\",\"album\":\"Aucun\"}");
 		}
-		else {
-						my $mac = ref($client) ? $client->macaddress() : $client;
-my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-	\&exampleErrorCallback, 
-	{
-                        client => $client, 
-                        
-                });
-
-        $http->get("http://$jeedomipaddress/core/api/jeeApi.php?api=$jeedomapi&type=squeezebox&adress=$mac&logicalId=statut&value=Pause");
-		}				
 	}	
 	 elsif( $request->isCommand([['play']])
-		|| $request->isCommand([['playlist'], ['newsong']]) 
 		|| $request->isCommand([['playlist'], ['play']])
 		|| $request->isCommand([['playlist'], ['resume']])){
-			
-					my $mac = ref($client) ? $client->macaddress() : $client;
-my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-	\&exampleErrorCallback, 
-	{
-                        client => $client, 
-                        
-                });
+		my $sTitle = $client->playingSong();
+		my $sName =  'Aucun';
+		my $artist   = '';
+		my $album    = '';
+		my $tracknum = '';
+		my $duration =  0;
+		my $played =  0;
+		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
+		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || 'Plugin';}; warn $@ if $@;
+		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || 'Plugin';}; warn $@ if $@;
+		my $mac = ref($client) ? $client->macaddress() : $client;
+		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 
-        $http->get("http://$jeedomipaddress/core/api/jeeApi.php?api=$jeedomapi&type=squeezebox&adress=$mac&logicalId=statut&value=Lecture");
-	}	 
-	 elsif( $request->isCommand([['playlist'], ['stop']]) 
-	 	 || $request->isCommand([['playlist'], ['clear']]) ) {				 
-		if ($iStopped == 1){			
-				&handlePlayStop($client);
+        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"Lecture\"}");
+	}
+	 elsif( $request->isCommand([['playlist'], ['stop']]) || $request->isCommand([['playlist'], ['clear']]) ) {
+		if ($iStopped == 1){
+			&handlePlayStop($client);
 		}
 	}
-		
+}
+
+sub powerCallback {
+	my $request = shift;
+	my $client = $request->client();
+	my $iPower = $client->power();
+	my $mac = ref($client) ? $client->macaddress() : $client;
+    
+	if ($iPower == 1){
+        my $sTitle = $client->playingSong();
+        my $sName =  'Aucun';
+        my $artist   = '';
+        my $album    = '';
+        my $tracknum = '';
+        my $duration =  0;
+        my $played =  0;
+		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
+		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || 'Plugin';}; warn $@ if $@;
+		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || 'Plugin';}; warn $@ if $@;
+        my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
+        if ($sName == ''){
+            $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"On\",\"titre\":\"Allume\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
+        } else {
+            $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"Lecture\"}");
+        }
+	}
+	else{
+		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
+		$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Off\",\"titre\":\"Eteinte\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
+	}
 }
 
 sub handlePlayStop {
 	my $client = shift;
-
-	
-	
 	my $iPower = $client->power();
-	
-	
-					my $mac = ref($client) ? $client->macaddress() : $client;
+	my $mac = ref($client) ? $client->macaddress() : $client;
 
 	if ($iPower == 1){
-my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-	\&exampleErrorCallback, 
-	{
-                        client => $client, 
-                        
-                });
-
-        $http->get("http://$jeedomipaddress/core/api/jeeApi.php?api=$jeedomapi&type=squeezebox&adress=$mac&logicalId=statut&value=Stop"); 		
+		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
+		$http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"Stop\",\"titre\":\"Arret\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
 	}
-	else{
-my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-	\&exampleErrorCallback, 
-	{
-                        client => $client, 
-                        
-                });
-
-        $http->get("http://$jeedomipaddress/core/api/jeeApi.php?api=$jeedomapi&type=squeezebox&adress=$mac&logicalId=statut&value=Off");
-	}
-
 
 }# Always end with a 1 to make Perl happy
 
@@ -298,8 +317,6 @@ sub exampleCallback {
 }
 
 sub exampleErrorCallback {
-
-
 
 }
 1;
