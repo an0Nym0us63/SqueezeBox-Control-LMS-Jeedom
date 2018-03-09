@@ -188,16 +188,15 @@ sub commandCallbackVolume {
 sub commandCallbackNewsong {
         my $request = shift;
         my $client = $request->client();
+        if( !defined( $client)) {
+                return;
+        }
 #       Modification apportée suite à la réponse de Michael Herger ici : http://forums.slimdevices.com/showthread.php?108743-Bad-information-displayed-Spotty-plugin
 #       request the current player's status. Starting with the current track ('-'), grab information for one single track:
         my $r = $client->execute(['status', '-', 1, 'tags:aKl']);
 
 #       playlist_loop of the response is a list of track information hashes. We only have requested on - grab it:
         my $track = $r->getResult('playlist_loop')->[0];
-
-        if( !defined( $client)) {
-                return;
-        }
         if( $request->isCommand([['playlist'], ['newsong']]) ) {
 
                 my $sTitle = $client->playingSong();
@@ -212,10 +211,6 @@ sub commandCallbackNewsong {
                 my $artist = $track->{artist};
                 my $album = $track->{album};
                 my $sName = $track->{title};
-
-#               eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
-#               eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || 'Plugin';}; warn $@ if $@;
-#               eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || 'Plugin';}; warn $@ if $@;
 
                 my $mac = ref($client) ? $client->macaddress() : $client;
                 my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
@@ -248,6 +243,9 @@ sub commandCallback {
 	 elsif( $request->isCommand([['play']])
 		|| $request->isCommand([['playlist'], ['play']])
 		|| $request->isCommand([['playlist'], ['resume']])){
+		my $r = $client->execute(['status', '-', 1, 'tags:aKl']);
+		#playlist_loop of the response is a list of track information hashes. We only have requested on - grab it:
+        my $track = $r->getResult('playlist_loop')->[0];
 		my $sTitle = $client->playingSong();
 		my $sName =  'Aucun';
 		my $artist   = '';
@@ -255,9 +253,9 @@ sub commandCallback {
 		my $tracknum = '';
 		my $duration =  0;
 		my $played =  0;
-		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
-		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || 'Plugin';}; warn $@ if $@;
-		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || 'Plugin';}; warn $@ if $@;
+		my $artist = $track->{artist};
+        my $album = $track->{album};
+        my $sName = $track->{title};
 		my $mac = ref($client) ? $client->macaddress() : $client;
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 
@@ -277,6 +275,9 @@ sub powerCallback {
 	my $mac = ref($client) ? $client->macaddress() : $client;
     
 	if ($iPower == 1){
+		my $r = $client->execute(['status', '-', 1, 'tags:aKl']);
+		#playlist_loop of the response is a list of track information hashes. We only have requested on - grab it:
+        my $track = $r->getResult('playlist_loop')->[0];
         my $sTitle = $client->playingSong();
         my $sName =  'Aucun';
         my $artist   = '';
@@ -284,10 +285,9 @@ sub powerCallback {
         my $tracknum = '';
         my $duration =  0;
         my $played =  0;
-		eval { $sName = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->title)))  || '';}; warn $@ if $@;
-		eval { $artist   = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->artistName))) || 'Plugin';}; warn $@ if $@;
-		eval { $album    = uri_escape(encode('utf-8',decode($enc,$sTitle->track()->albumname))) || 'Plugin';}; warn $@ if $@;
-        my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
+		my $artist = $track->{artist};
+        my $album = $track->{album};
+        my $sName = $track->{title};
         if ($sName == ''){
             $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"On\",\"titre\":\"Allume\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
         } else {
