@@ -3,7 +3,7 @@
 <title lang="EN">Plugin Jeedom</title>
 </details>
 <plugins>
-<plugin name="JeedomSBcontrol" version="1.1.2" minTarget="7.5" maxTarget="*">
+<plugin name="JeedomSBcontrol" version="1.1.3" minTarget="7.5" maxTarget="*">
 <title lang="EN">JeedomSBcontrol</title>
 <desc lang="EN">
 Plugin pour se synchroniser avec le plugin Squeezebox Control de Jeedom
@@ -11,7 +11,7 @@ Plugin pour se synchroniser avec le plugin Squeezebox Control de Jeedom
 <creator>Sarakha63</creator>
 <email/>
 <url>http://sarakha63.github.io/SqueezeBox-Control-LMS-Jeedom/repository/JeedomSBcontrol.zip</url>
-<sha>479a88dff345a89063aae09e6f5e66a242313d52</sha>
+<sha>2aef3a4d5f3ef5533491117f8d08cc2e222e4834</sha>
 <link>http://sarakha63-domotique.fr/</link>
 </plugin>
 </plugins>
