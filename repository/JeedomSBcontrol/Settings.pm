@@ -35,15 +35,15 @@ sub myDebug {
 my $prefs = preferences('plugin.jeedomsbcontrol');
 
 sub name {
-	return Slim::Web::HTTP::CSRF->protectName('PLUGIN_JEEDOMSBCONTROL_NAME');
+	return Slim::Web::HTTP::CSRF->protectName('PLUGIN_JEEDOM_NAME');
 }
 
 sub page {
-	return Slim::Web::HTTP::CSRF->protectURI('plugins/JeedomSBcontrol/settings/basic.html');
+	return Slim::Web::HTTP::CSRF->protectURI('plugins/Jeedomsbcontrol/settings/basic.html');
 }
 
 sub prefs {
-	return ($prefs, qw(ip complement key) );
+	return ($prefs, qw(address user) );
 }
 
 1;
