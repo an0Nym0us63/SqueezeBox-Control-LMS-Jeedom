@@ -288,6 +288,7 @@ sub powerCallback {
 		my $artist = $track->{artist};
         my $album = $track->{album};
         my $sName = $track->{title};
+        my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
         if ($sName == ''){
             $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={\"statut\":\"On\",\"titre\":\"Allume\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
         } else {
