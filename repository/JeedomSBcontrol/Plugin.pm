@@ -93,7 +93,7 @@ sub syncCallback {
 		}
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
 			\&exampleErrorCallback,{client => $client,});
-		$http->get("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"synced\":\"$synced\"}");
+		$http->get("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"synced\":\"$synced\"}");
 }
 
 sub commandCallbackRepeat {
@@ -107,8 +107,8 @@ sub commandCallbackRepeat {
 			my $mac = ref($client) ? $client->macaddress() : $client;
 			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
 			\&exampleErrorCallback,{client => $client,});
-			$log->error("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"volume\":\"$iVolume\"}");
-			$http->get("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"volume\":\"$iVolume\"}");
+			$log->error("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"volume\":\"$iVolume\"}");
+			$http->get("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"volume\":\"$iVolume\"}");
 }
 
 sub commandCallbackVolume {
@@ -124,8 +124,8 @@ sub commandCallbackVolume {
 			my $mac = ref($client) ? $client->macaddress() : $client;
 			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
 			\&exampleErrorCallback,{client => $client,});
-			$log->error("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"volume\":\"$iVolume\"}");
-			$http->get("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"volume\":\"$iVolume\"}");
+			$log->error("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"volume\":\"$iVolume\"}");
+			$http->get("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"volume\":\"$iVolume\"}");
 		}
 	}
 }
@@ -154,7 +154,7 @@ sub commandCallbackNewsong {
 			my $mac = ref($client) ? $client->macaddress() : $client;
 			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 
-			$http->get("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"Lecture\"}");
+			$http->get("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"Lecture\"}");
 		}
 }
 
@@ -172,7 +172,7 @@ sub commandCallback {
 		if($iPaused ==  1 ) {
 			my $mac = ref($client) ? $client->macaddress() : $client;
 			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-			$http->get("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"statut\":\"Pause\",\"titre\":\"Pause\",\"artist\":\"En\",\"album\":\"Aucun\"}");
+			$http->get("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"statut\":\"Pause\",\"titre\":\"Pause\",\"artist\":\"En\",\"album\":\"Aucun\"}");
 		}
 	}	
 	 elsif( $request->isCommand([['play']])
@@ -193,7 +193,7 @@ sub commandCallback {
 		my $mac = ref($client) ? $client->macaddress() : $client;
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 
-		$http->get("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"Lecture\"}");
+		$http->get("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"Lecture\"}");
 	}
 	 elsif( $request->isCommand([['playlist'], ['stop']]) || $request->isCommand([['playlist'], ['clear']]) ) {
 		if ($iStopped == 1){
@@ -223,14 +223,14 @@ sub powerCallback {
 		my $sName = $track->{title};
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
 		if ($sName == ''){
-			$http->get("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"statut\":\"On\",\"titre\":\"Allume\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
+			$http->get("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"statut\":\"On\",\"titre\":\"Allume\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
 		} else {
-			$http->get("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"Lecture\"}");
+			$http->get("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"Lecture\"}");
 		}
 	}
 	else{
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-		$http->get("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"statut\":\"Off\",\"titre\":\"Eteinte\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
+		$http->get("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"statut\":\"Off\",\"titre\":\"Eteinte\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
 	}
 }
 
@@ -241,7 +241,7 @@ sub handlePlayStop {
 
 	if ($iPower == 1){
 		my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,\&exampleErrorCallback,{client => $client,});
-		$http->get("http://$jeedomip$jeedomcomplement/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"statut\":\"Stop\",\"titre\":\"Arret\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
+		$http->get("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value={\"statut\":\"Stop\",\"titre\":\"Arret\",\"artist\":\"SqueezeBox\",\"album\":\"Aucun\"}");
 	}
 
 }
