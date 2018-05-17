@@ -23,4 +23,4 @@ SETUP_JEEDOMCOMPLEMENT
 	EN	Complement (/jeedom)
 	
 SETUP_JEEDOMKEY
-	EN	Clé API de Jeedom
+	EN	Clé API du plugin SqueezeBoxControl (à partir du 17 mai 2018)
