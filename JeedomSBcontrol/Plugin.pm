@@ -17,6 +17,7 @@ package Plugins::JeedomSBcontrol::Plugin;
 # modify it under the terms of the GNU General Public License,
 # version 2.
 
+
 # required bit
 use strict;
 
