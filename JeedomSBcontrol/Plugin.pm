@@ -1,307 +1,345 @@
 package Plugins::JeedomSBcontrol::Plugin;
-
-# HelloWorld tutorial plugin by Mitch Gerdisch
-# Meant to be a way of figuring out and understanding how plugins need to be written for SC7.
-# There are 4 basic components that need to be written for SC7 plugins:
-#	Plugin.pm - This is the main processing bit of the plugin and not much different than pre-SC7 plugin code.
-#				But, there are differences.
-#	Settings.pm - This file contains perl code for processing the web page used to set the settings for the plugin.
-#	strings.txt - Where all the strings are stored - including their various lanuage equivalents.
-#	basic.html - This is a file under HTML/<language abbrev.>/plugins/<plugin name>/settings/. It contains 
-#				 HTML-like stuff for displaying the plugin's web user interface.
-
-# This code is derived from code with the following copyright message:
-#
-# SqueezeCenter Copyright 2001-2007 Logitech.
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License,
-# version 2.
-
-# required bit
 use strict;
-
-# required bit
 use base qw(Slim::Plugin::Base);
-
-# Plugin specific bit - put name of plugin where HelloWorld is.
-# This points to the Settings.pm file that you also need to create/update for the plugin.
-use Plugins::JeedomSbcontrol::Settings;
+use Plugins::JeedomSBcontrol::Settings;
 use Slim::Music::Info;
-
+use Encode qw(encode decode);;
 use Slim::Utils::Misc;
 use Slim::Utils::Network;
 use Slim::Player::Player;
 use Slim::Player::Client;
 use Slim::Player::Sync;
-# Might be required. At least it's not bad to include it.
 use Scalar::Util qw(blessed);
-
-# Might be required. Not sure, but again it doesn't hurt.
 use Slim::Control::Request;
-
-# MUST HAVE: This log bit is new and allows one to use nicer logging facilities than were available pre-SC7
 use Slim::Utils::Log;
-
-# MUST HAVE: magical preferences getting stuff
 use Slim::Utils::Prefs;
-
-# MUST HAVE: provides the strings functionality that uses the strings.txt file to present the correct language
 use Slim::Utils::Strings qw(string);
-
+use Data::Dumper;
+use utf8;
+use URI::Escape;
+my $enc = 'latin-1';
 my $jeedomip;
 my $jeedomkey;
 my $jeedomcomplement;
-# So, get the data related to this plugin.
-# The call to preferences() will be "plugin.<plugin name in lowercase>
-# Something that might be interesting, there's actually a prefs file for each plugin.
-# On Windows its stored in documents and settings/all users/application data/squeezecenter/prefs.
-# You can look at it (it's a text file) and see what is being currently stored.
-# However, there seems to be a lag between doing a set and it actually showing up in the file, fyi.
 my $prefs = preferences('plugin.jeedomsbcontrol');
-
-# Any global variables? Go ahead and declare and/or set them here
+my %data;
+my %repeat;
+my %shuffle;
 our @browseMenuChoices;
 
-# used for logging
-# To debug, run squeezecenter.exe from the command prompt as follows:
-# squeezecenter.exe --debug plugin.<plugin name>=<logging level in caps>
-# Log levels are DEBUG, INFO, WARN, ERROR, FATAL where a level will include messages for all levels to the right.
-# So, squeezecenter.exe --debug plugin.helloworld=INFO,persist will show all messages fro INFO, WARN, ERROR, and FATAL.
-# The "persist" bit of text allows the system to remember that logging level between invocations of squeezecenter.
 my $log = Slim::Utils::Log->addLogCategory({
-	'category'     => 'plugin.jeedomsbcontrol',
+	'category'	 => 'plugin.jeedomsbcontrol',
 	'defaultLevel' => 'INFO',
-#	'defaultLevel' => 'DEBUG',
 	'description'  => getDisplayName(),
 });
 
-# This is an old friend from pre-SC7 days
-# It returns the name to display on the squeezebox
-sub getDisplayName {
-	return 'PLUGIN_JEEDOMSBCONTROL';
+sub roundup {
+	my $n = shift;
+	return(($n == int($n)) ? $n : int($n + 1))
 }
 
-# I have my own debug routine so that I can add the *** stuff easily.
+sub getDisplayName {
+	return 'PLUGIN_JEEDOMSBCONTROL_NAME';
+}
+
 sub myDebug {
 	my $msg = shift;
+	my $source = shift;
 	my $lvl = shift;
-	
 	if ($lvl eq "")
 	{
 		$lvl = "debug";
 	}
-
-	
-	$log->$lvl("*** JeedomSbcontrol *** $msg");
+	$log->$lvl("*** JeedomSbcontrol *** $source $msg");
 }
 
-# Another old friend from pre-SC7 days.
-# This is called when SC loads the plugin.
-# So use it to initialize variables and the like.
-sub initPlugin {
+sub sender {
+	my $value = shift;
+	my $client = shift;
+	my $source = shift;
+	my $mac = ref($client) ? $client->macaddress() : $client;
+	if(!($data{$mac} ~~ $value)){
+        $data{$mac} = $value;
+        my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
+					\&exampleErrorCallback,{client => $client,});
+		myDebug("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value=$value",$source);
+		my $encoded = uri_escape($value);
+		$http->get("http://$jeedomip$jeedomcomplement/plugins/squeezeboxcontrol/core/php/squeezeboxcontrolApi.php?api=$jeedomkey&adress=$mac&value=$encoded");
+    }else{
+        $log->debug('Sending informations NON OK : request already send');
+    }
+}
 
+sub initPlugin {
 	$jeedomip =	$prefs->get('ip');
 	$jeedomkey  =	$prefs->get('key');
 	$jeedomcomplement  =	$prefs->get('complement');
-    
 	my $class = shift;
-	
 	myDebug("Initializing");
-		
 	$class->SUPER::initPlugin();
-
 	Plugins::JeedomSBcontrol::Settings->new;
-	
 	Slim::Control::Request::subscribe( \&commandCallbackVolume, [['mixer']]);
-    
-    Slim::Control::Request::subscribe( \&commandCallbackNewsong, [['playlist'], ['newsong']]);
-    
-    Slim::Control::Request::subscribe( \&commandCallback, [['play', 'playlist', 'pause']]);
-
+	Slim::Control::Request::subscribe( \&commandCallback, [['play', 'pause']]);
+	Slim::Control::Request::subscribe( \&powerCallback, [['power']]);
+	Slim::Control::Request::subscribe( \&syncCallback, [['sync']]);
+	Slim::Control::Request::subscribe( \&commandCallbackShuffle, [['shuffle']]);
+	Slim::Control::Request::subscribe( \&commandCallbackRepeat, [['repeat']]);
+	Slim::Control::Request::subscribe( \&commandCallbackClient, [['client']]);
 }
 
 sub shutdownPlugin {
-
 	Slim::Control::Request::unsubscribe(\&commandCallbackVolume);
-    
-    Slim::Control::Request::unsubscribe(\&commandCallbackNewsong);
-    
-    Slim::Control::Request::unsubscribe(\&commandCallback);
-
+	Slim::Control::Request::unsubscribe(\&commandCallback);
+	Slim::Control::Request::unsubscribe(\&powerCallback);
+	Slim::Control::Request::unsubscribe(\&syncCallback);
+	Slim::Control::Request::unsubscribe(\&commandCallbackShuffle);
+	Slim::Control::Request::unsubscribe(\&commandCallbackRepeat);
+	Slim::Control::Request::unsubscribe(\&commandCallbackClient);
 }
 
-
-
-sub commandCallbackVolume {
+sub syncCallback {
 	my $request = shift;
+	my $client = $request->client();
+	if( !defined( $client)) {
+			return;
+	}
+	$log->debug("Callback on sync");
+	&handlePlayTrack($client,'sync');
+}
 
+sub commandCallbackClient {
+	my $request = shift;
+	my $client = $request->client();
+	if( !defined( $client)) {
+			return;
+	}
+	$log->debug("Callback on client");
+	&handlePlayTrack($client,'client');
+}
+
+sub commandCallbackShuffle {
+	my $request = shift;
 	my $client = $request->client();
 	if( !defined( $client)) {
 		return;
 	}
-		
-	my $iPower = $client->power();
+	$log->debug("Callback on shuffle");
+	&handlePlayTrack($client,'shuffle');
+}
 
-	if( $request->isCommand([['mixer'], ['volume']])  ) {
-		if($iPower ==  1) {
-			
-			my $iVolume = $client->volume();			
-			my $mac = ref($client) ? $client->macaddress() : $client;
-			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-			\&exampleErrorCallback, 
-			{
-                client => $client, 
-            });
+sub commandCallbackRepeat {
+	my $request = shift;
+	my $client = $request->client();
+	if( !defined( $client)) {
+		return;
+	}
+	$log->debug("Callback on repeat");
+	&handlePlayTrack($client,'repeat');
+}
 
-        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&logicalId=volume&value=$iVolume");
-		}
-	}	
+sub commandCallbackVolume {
+	my $request = shift;
+	my $client = $request->client();
+	if( !defined( $client)) {
+		return;
+	}
+	$log->debug("Callback on volume");
+	&handlePlayTrack($client,'volume');
 }
 
 sub commandCallbackNewsong {
 	my $request = shift;
-
 	my $client = $request->client();
 	if( !defined( $client)) {
-		return;
+			return;
 	}
-		
-   
-
-	if( $request->isCommand([['playlist'], ['newsong']]) ) {
-		
-    
-	my $sTitle = $client->playingSong();
-	
-	my $sName =  'No Track';	
-	my $artist   = '';
-	my $album    = '';
-	my $tracknum = '';
-	my $duration =  0;
-	my $played =  0;
-	
-	eval {$sName =  $sTitle->track()->title  || '';	}; warn $@ if $@;
-	eval { $artist   = $sTitle->track()->artistName || '';}; warn $@ if $@;
-	eval { $album    = $sTitle->track()->album->name || '';}; warn $@ if $@;
-	eval { $tracknum = $sTitle->track()->tracknum || '';}; warn $@ if $@;
-	eval { $duration = $sTitle->track()->secs;}; warn $@ if $@;
-
-        
-my $mac = ref($client) ? $client->macaddress() : $client;
-my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-	\&exampleErrorCallback, 
-	{
-                        client => $client, 
-                        
-                });
-
-        $http->get("http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&logicalId=infos&titre=$sName&artis=$artist&album=$album");
-	}	
+	$log->debug("Callback on newsong");
+	&handlePlayTrack($client,'newsong');
 }
 
 sub commandCallback {
 	my $request = shift;
-
 	my $client = $request->client();
-
-	# Do nothing if client is not defined
+        my $iPower = $client->power();
 	if( !defined( $client)) {
 		return;
 	}
-
-	my $iPaused = $client->isPaused();
-	my $iStopped = $client->isStopped();
-
-	if ($request->isCommand([['pause'] ]) 
-		|| $request->isCommand([['playlist'], ['pause']])){
-		
-		if($iPaused ne  1) {
-			my $mac = ref($client) ? $client->macaddress() : $client;
-			my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-			\&exampleErrorCallback, 
-			{
-              client => $client,        
-                });
-
-        $http->get('http://$jeedomip$jeedomcomplement/core/api/jeeApi.php?api=$jeedomkey&type=squeezeboxcontrol&adress=$mac&value={"statut":"Lecture"}');
+	if(($request->isCommand([['playlist'], ['newsong']])) || ($request->isCommand([['play']])) || ($request->isCommand([['pause']]))  || ($request->isCommand([['playlist'], ['stop']]))) {
+		if ($iPower == 1){
+			$log->debug("Callback on callback");;
+			&handlePlayTrack($client,'callback');
 		}
-		else {
-						my $mac = ref($client) ? $client->macaddress() : $client;
-my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-	\&exampleErrorCallback, 
-	{
-                        client => $client, 
-                        
-                });
-
-        $http->get("http://$jeedomipaddress/core/api/jeeApi.php?api=$jeedomapi&type=squeezebox&adress=$mac&logicalId=statut&value=Pause");
-		}				
-	}	
-	 elsif( $request->isCommand([['play']])
-		|| $request->isCommand([['playlist'], ['newsong']]) 
-		|| $request->isCommand([['playlist'], ['play']])
-		|| $request->isCommand([['playlist'], ['resume']])){
-			
-					my $mac = ref($client) ? $client->macaddress() : $client;
-my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-	\&exampleErrorCallback, 
-	{
-                        client => $client, 
-                        
-                });
-
-        $http->get("http://$jeedomipaddress/core/api/jeeApi.php?api=$jeedomapi&type=squeezebox&adress=$mac&logicalId=statut&value=Lecture");
-	}	 
-	 elsif( $request->isCommand([['playlist'], ['stop']]) 
-	 	 || $request->isCommand([['playlist'], ['clear']]) ) {				 
-		if ($iStopped == 1){			
-				&handlePlayStop($client);
-		}
+	} else {
+		$log->debug(Dumper($request));
 	}
-		
 }
 
-sub handlePlayStop {
-	my $client = shift;
-
-	
-	
+sub powerCallback {
+	my $request = shift;
+	my $client = $request->client();
 	my $iPower = $client->power();
-	
-	
-					my $mac = ref($client) ? $client->macaddress() : $client;
-
+	my $iSyncedPlayer = $client->isSynced() ;
+	my $tosend='';
+	my @SyncedSlaves ;
+	$log->debug("Callback on power");
 	if ($iPower == 1){
-my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-	\&exampleErrorCallback, 
-	{
-                        client => $client, 
-                        
-                });
-
-        $http->get("http://$jeedomipaddress/core/api/jeeApi.php?api=$jeedomapi&type=squeezebox&adress=$mac&logicalId=statut&value=Stop"); 		
+		&handlePlayTrack($client);
+	} else{
+		sender("{\"statut\":\"Off\",\"etat\":\"Off\"}",$client,"powerCallback");
+		if ($iSyncedPlayer ==1 ){
+			@SyncedSlaves = Slim::Player::Sync::slaves($client);
+			foreach my $slaveclient (@SyncedSlaves) {
+				my $iPower = $slaveclient->power();
+				if ($iPower == 1){
+					&handlePlayTrack($slaveclient,'power');
+				} else {
+					sender("{\"statut\":\"Off\",\"etat\":\"Off\"}",$slaveclient,"powerCallbackSync");
+				}
+			}
+		}
 	}
-	else{
-my $http = Slim::Networking::SimpleAsyncHTTP->new(\&exampleCallback,
-	\&exampleErrorCallback, 
-	{
-                        client => $client, 
-                        
-                });
+}
 
-        $http->get("http://$jeedomipaddress/core/api/jeeApi.php?api=$jeedomapi&type=squeezebox&adress=$mac&logicalId=statut&value=Off");
+sub handlePlayTrack {
+	my $client = shift;
+	my $from = shift;
+	my $iSyncedPlayer = $client->isSynced() ;
+	my $iPower = $client->power();
+	my $iMaster = Slim::Player::Sync::isMaster($client);
+	my @iSyncedMaster = $client->master();
+	my @SyncedSlaves ;
+	my $sTitle = $client->playingSong();
+	my $sName =  'Aucun';
+	my $artist   = 'Aucun';
+	my $album	= 'Aucun';
+	my $iVolume = $client->volume();
+	my $tempVolume = $client->tempVolume();
+	my $status = '';
+	my $etat = 'On';
+	my $sync_status = 0;
+	my $repeat_status = Slim::Player::Playlist::repeat($client);
+	my $shuffle_status = Slim::Player::Playlist::shuffle($client);
+	my $mac = ref($client) ? $client->macaddress() : $client;
+	if(defined($sTitle)) {
+		eval {$sName =  $sTitle->track()->title  || ''; }; warn $@ if $@;
+		eval { $artist   = $sTitle->track()->artistName || '';}; warn $@ if $@;
+		eval { $album	= $sTitle->track()->album  ? $sTitle->track()->album->name  : '';}; warn $@ if $@;
+		$artist	 = encode('UTF-8', $artist);
+		$album	 = encode('UTF-8', $album);
+		$sName	 = encode('UTF-8', $sName);
+		my $remoteMeta;
+		my $handler;
+		$handler = Slim::Player::ProtocolHandlers->handlerForURL($sTitle->track()->url);
+		if ( $handler && $handler->can('getMetadataFor') ) {
+			$remoteMeta = $handler->getMetadataFor($client,$sTitle->track()->url );
+			$album = $sName;
+			if(defined( $remoteMeta->{album})) {
+				$album = encode('UTF-8', $remoteMeta->{album});
+			}
+			$artist = encode('UTF-8', $remoteMeta->{artist});
+			$sName = encode('UTF-8', $remoteMeta->{title});
+		}
 	}
-
-
-}# Always end with a 1 to make Perl happy
+	my $iPaused = $client->isPaused();
+	my $iStopped = $client->isStopped();
+	if($iPower ==  1) {
+		if($iPaused ne  1) {
+			if ($iStopped == 1){
+				$status = "Stop";
+			}else{
+				$status = "Lecture";
+			}
+		}else{
+			$status = "Pause";
+		}
+	}else{
+		$status = "Off";
+		$etat = "Off";
+	}
+	my $volume = $iVolume;
+	if ($iSyncedPlayer == 1 ){
+		$sync_status = 1;
+		@SyncedSlaves = Slim::Player::Sync::slaves($client);
+		my $slave_json;
+		my $macmaster;
+		my $master_name;
+		foreach my $slaveclient (@SyncedSlaves) {
+			my $macslave = ref($slaveclient) ? $slaveclient->macaddress() : $slaveclient;
+			$slave_json .= "{\"mac\":\"$macslave\"},";
+		}
+		$slave_json = substr $slave_json, 0, -1;
+		foreach my $masterclient (@iSyncedMaster) {
+			$macmaster = ref($masterclient) ? $masterclient->macaddress() : $masterclient;
+			$volume = $masterclient->volume();
+			if (!($volume =~ /^\d+$/)){
+				$volume = 'old';
+			}
+			if ($from ~~ "volume") {
+				sender("{\"volume\":\"$volume\",\"sync\":{\"master\":\"null\",\"slave\":[$slave_json]}}",$masterclient,"handlermaster");
+			} elsif ($from ~~ 'repeat') {
+				sender("{\"repeat\":\"$repeat_status\",\"sync\":{\"master\":\"null\",\"slave\":[$slave_json]}}",$masterclient,"handlermaster");
+			} elsif ($from ~~ 'shuffle') {
+				sender("{\"shuffle\":\"$shuffle_status\",\"sync\":{\"master\":\"null\",\"slave\":[$slave_json]}}",$masterclient,"handlermaster");
+			} else {
+				if (exists($shuffle{$mac}) && !($shuffle{$mac} ~~ $shuffle_status)){
+					sender("{\"shuffle\":\"$shuffle_status\",\"sync\":{\"master\":\"null\",\"slave\":[$slave_json]}}",$masterclient,"handlermaster");
+				} elsif (exists($repeat{$mac}) && !($repeat{$mac} ~~ $repeat_status)){
+					sender("{\"repeat\":\"$repeat_status\",\"sync\":{\"master\":\"null\",\"slave\":[$slave_json]}}",$masterclient,"handlermaster");
+				} else {
+					sender("{\"repeat\":\"$repeat_status\",\"shuffle\":\"$shuffle_status\",\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"$status\",\"etat\":\"$etat\",\"sync\":{\"master\":\"null\",\"slave\":[$slave_json]}}",$masterclient,"handlermaster");
+				}
+			}
+		}
+		foreach my $slaveclient (@SyncedSlaves) {
+			$volume = $slaveclient->volume();
+			if (!($volume =~ /^\d+$/)){
+				$volume = 'old';
+			}
+			if ($from ~~ "volume") {
+				sender("{\"volume\":\"$volume\",\"sync\":{\"master\":{\"mac\":\"$macmaster\"},\"slave\":[$slave_json]}}",$slaveclient,"handlerslave");
+			} elsif ($from ~~ 'repeat') {
+				sender("{\"repeat\":\"$repeat_status\",\"sync\":{\"master\":{\"mac\":\"$macmaster\"},\"slave\":[$slave_json]}}",$slaveclient,"handlerslave");
+			} elsif ($from ~~ 'shuffle') {
+				sender("{\"shuffle\":\"$shuffle_status\",\"sync\":{\"master\":{\"mac\":\"$macmaster\"},\"slave\":[$slave_json]}}",$slaveclient,"handlerslave");
+			} else {
+				if (exists($shuffle{$mac}) && !($shuffle{$mac} ~~ $shuffle_status)){
+					sender("{\"shuffle\":\"$shuffle_status\",\"sync\":{\"master\":{\"mac\":\"$macmaster\"},\"slave\":[$slave_json]}}",$slaveclient,"handlerslave");
+				} elsif (exists($repeat{$mac}) && !($repeat{$mac} ~~ $repeat_status)){
+					sender("{\"repeat\":\"$repeat_status\",\"sync\":{\"master\":{\"mac\":\"$macmaster\"},\"slave\":[$slave_json]}}",$slaveclient,"handlerslave");
+				} else {
+					sender("{\"repeat\":\"$repeat_status\",\"shuffle\":\"$shuffle_status\",\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"$status\",\"etat\":\"$etat\",\"sync\":{\"master\":{\"mac\":\"$macmaster\"},\"slave\":[$slave_json]}}",$slaveclient,"handlerslave");
+				}
+			}
+		}
+	}else{
+		if (!($volume =~ /^\d+$/)){
+				$volume = 'old';
+			}
+		if ($from ~~ "volume") {
+			sender("{\"volume\":\"$volume\"}",$client,"handler");
+		} elsif ($from ~~ 'repeat') {
+			sender("{\"repeat\":\"$repeat_status\"}",$client,"handler");
+		} elsif ($from ~~ 'shuffle') {
+			sender("{\"shuffle\":\"$shuffle_status\"}",$client,"handler");
+		} else {
+			if (exists($shuffle{$mac}) && !($shuffle{$mac} ~~ $shuffle_status)){
+				sender("{\"shuffle\":\"$shuffle_status\"}",$client,"handler");
+			} elsif (exists($repeat{$mac}) && !($repeat{$mac} ~~ $repeat_status)){
+				sender("{\"repeat\":\"$repeat_status\"}",$client,"handler");
+			} else {
+				sender("{\"repeat\":\"$repeat_status\",\"shuffle\":\"$shuffle_status\",\"titre\":\"$sName\",\"artist\":\"$artist\",\"album\":\"$album\",\"statut\":\"$status\",\"etat\":\"$etat\",\"sync\":\"null\"}",$client,"handler");
+			}
+		}
+		$repeat{$mac} = $repeat_status;
+		$shuffle{$mac} = $shuffle_status;
+	}
+}
 
 sub exampleCallback {
 
 }
 
 sub exampleErrorCallback {
-
-
 
 }
 1;

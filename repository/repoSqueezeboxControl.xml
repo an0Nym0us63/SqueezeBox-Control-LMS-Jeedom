@@ -8,11 +8,11 @@
 <desc lang="EN">
 Plugin pour se synchroniser avec le plugin Squeezebox Control de Jeedom
 </desc>
-<creator>Sarakha63 inspired by Hydro</creator>
+<creator>Sarakha63</creator>
 <email/>
-<url>http://github.com/sarakha63/SqueezeBox-Control-LMS-Jeedom/raw/master/JeedomSBcontrol.zip</url>
-<sha>735db5d96f56698124b7e14948a02e47b08a9074</sha>
-<link>https://jeedom.fr/</link>
+<url>http://github.com/sarakha63/SqueezeBox-Control-LMS-Jeedom/raw/master/repository/JeedomSBcontrol.zip</url>
+<sha>5623e0cb0dbeabc639d103c3b3dfc31f24710ace</sha>
+<link>http://sarakha63-domotique.fr</link>
 </plugin>
 </plugins>
 </extensions>
